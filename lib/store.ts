@@ -8,6 +8,7 @@ import type {
   DailyTotals,
   ChatMessage,
   BadgeId,
+  FoodDatabaseItem,
 } from "./types";
 
 export type MealBuilderItem = Omit<FoodEntry, "id" | "loggedAt">;
@@ -22,6 +23,7 @@ interface NutriState {
   earnedBadges: BadgeId[];
   isBuildingMeal: boolean;
   mealBuilderItems: MealBuilderItem[];
+  customFoods: FoodDatabaseItem[];
 
   setProfile: (profile: UserProfile) => void;
   addFoodEntry: (entry: Omit<FoodEntry, "id" | "loggedAt">) => void;
@@ -36,6 +38,8 @@ interface NutriState {
   removeMealItem: (index: number) => void;
   logMeal: (mealName: string) => void;
   cancelMeal: () => void;
+  addCustomFood: (food: Omit<FoodDatabaseItem, "id" | "isCustom">) => void;
+  removeCustomFood: (id: string) => void;
 }
 
 const todayStr = () => new Date().toISOString().split("T")[0];
@@ -70,6 +74,7 @@ export const useNutriStore = create<NutriState>()(
       earnedBadges: [],
       isBuildingMeal: false,
       mealBuilderItems: [],
+      customFoods: [],
 
       setProfile: (profile) => set({ profile }),
 
@@ -161,6 +166,19 @@ export const useNutriStore = create<NutriState>()(
       },
 
       cancelMeal: () => set({ isBuildingMeal: false, mealBuilderItems: [] }),
+
+      addCustomFood: (food) =>
+        set((s) => ({
+          customFoods: [
+            ...s.customFoods,
+            { ...food, id: crypto.randomUUID(), isCustom: true },
+          ],
+        })),
+
+      removeCustomFood: (id) =>
+        set((s) => ({
+          customFoods: s.customFoods.filter((f) => f.id !== id),
+        })),
     }),
     {
       name: "nutrisathi-store",
@@ -171,6 +189,7 @@ export const useNutriStore = create<NutriState>()(
         streak: s.streak,
         lastLogDate: s.lastLogDate,
         earnedBadges: s.earnedBadges,
+        customFoods: s.customFoods,
       }),
     }
   )

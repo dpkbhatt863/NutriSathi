@@ -70,6 +70,17 @@ export const BADGES: Badge[] = [
   { id: "streak_30", emoji: "👑", label: "30-day streak" },
 ];
 
+export interface FoodDatabaseItem {
+  id: string;
+  name: string;
+  brand?: string;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  carbsPer100g: number;
+  fatPer100g: number;
+  isCustom?: boolean;
+}
+
 export interface NutriData {
   action: "log";
   food_name: string;
