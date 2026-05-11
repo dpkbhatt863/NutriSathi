@@ -2,8 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useNutriStore } from "@/lib/store";
 import { calculateTDEE } from "@/lib/nutrition";
+import { profileSchema, type ProfileFormValues, type ProfileFormInput } from "@/lib/schemas/profile";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 import type { ActivityLevel, Goal, MacroTargets } from "@/lib/types";
 
 const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
@@ -26,6 +37,9 @@ const GOAL_LABEL: Record<Goal, string> = {
   gain: "gain weight",
 };
 
+const INPUT_CLASS =
+  "w-full px-4 py-3 rounded-xl border border-[#fbebd8] bg-[#fdf6ee] text-[#3d2b0e] placeholder-[#a89070] focus:outline-none focus:ring-2 focus:ring-[#ff7c2a]/40 transition";
+
 interface ResultModal {
   name: string;
   goal: Goal;
@@ -35,65 +49,33 @@ interface ResultModal {
 export default function SetupForm() {
   const router = useRouter();
   const setProfile = useNutriStore((s) => s.setProfile);
-
-  const [form, setForm] = useState({
-    name: "",
-    age: "",
-    gender: "male" as "male" | "female",
-    weight: "",
-    height: "",
-    activity: "moderately_active" as ActivityLevel,
-    goal: "maintain" as Goal,
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [modal, setModal] = useState<ResultModal | null>(null);
 
-  const set = (field: string, value: string) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const form = useForm<ProfileFormInput, unknown, ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: "",
+      age: undefined,
+      gender: "male",
+      weight: undefined,
+      height: undefined,
+      activity: "moderately_active",
+      goal: "maintain",
+    },
+  });
 
-  const validate = () => {
-    const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.age || +form.age < 10 || +form.age > 120)
-      e.age = "Enter a valid age (10–120)";
-    if (!form.weight || +form.weight < 20 || +form.weight > 300)
-      e.weight = "Enter a valid weight (20–300 kg)";
-    if (!form.height || +form.height < 100 || +form.height > 250)
-      e.height = "Enter a valid height (100–250 cm)";
-    return e;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      return;
-    }
-
+  const onSubmit = (values: ProfileFormValues) => {
     const targets = calculateTDEE(
-      +form.weight,
-      +form.height,
-      +form.age,
-      form.gender,
-      form.activity,
-      form.goal,
+      values.weight,
+      values.height,
+      values.age,
+      values.gender,
+      values.activity,
+      values.goal,
     );
 
-    setProfile({
-      name: form.name.trim(),
-      age: +form.age,
-      gender: form.gender,
-      weight: +form.weight,
-      height: +form.height,
-      activity: form.activity,
-      goal: form.goal,
-      targets,
-    });
-
-    // Show targets modal before navigating
-    setModal({ name: form.name.trim(), goal: form.goal, targets });
+    setProfile({ ...values, targets });
+    setModal({ name: values.name, goal: values.goal, targets });
   };
 
   const handleStart = () => {
@@ -103,140 +85,168 @@ export default function SetupForm() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Name */}
-        <div>
-          <label className="block text-xs font-700 uppercase tracking-widest text-[#a89070] mb-1">
-            Your Name
-          </label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
-            placeholder="Rahul, Priya…"
-            className="w-full px-4 py-3 rounded-xl border border-[#fbebd8] bg-[#fdf6ee] text-[#3d2b0e] placeholder-[#a89070] focus:outline-none focus:ring-2 focus:ring-[#ff7c2a]/40 transition"
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          {/* Name */}
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Your Name</FormLabel>
+                <FormControl>
+                  <input
+                    {...field}
+                    type="text"
+                    placeholder="Rahul, Priya…"
+                    className={INPUT_CLASS}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {errors.name && (
-            <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-          )}
-        </div>
 
-        {/* Age + Gender row */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-700 uppercase tracking-widest text-[#a89070] mb-1">
-              Age
-            </label>
-            <input
-              type="number"
-              value={form.age}
-              onChange={(e) => set("age", e.target.value)}
-              placeholder="25"
-              min={10}
-              max={120}
-              className="w-full px-4 py-3 rounded-xl border border-[#fbebd8] bg-[#fdf6ee] text-[#3d2b0e] placeholder-[#a89070] focus:outline-none focus:ring-2 focus:ring-[#ff7c2a]/40 transition"
+          {/* Age + Gender */}
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="age"
+              render={({ field: { value, ...rest } }) => (
+                <FormItem>
+                  <FormLabel>Age</FormLabel>
+                  <FormControl>
+                    <input
+                      {...rest}
+                      value={value as string ?? ""}
+                      type="number"
+                      placeholder="25"
+                      min={10}
+                      max={120}
+                      className={INPUT_CLASS}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.age && (
-              <p className="text-red-500 text-xs mt-1">{errors.age}</p>
-            )}
+            <FormField
+              control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Gender</FormLabel>
+                  <FormControl>
+                    <select {...field} className={INPUT_CLASS}>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-          <div>
-            <label className="block text-xs font-700 uppercase tracking-widest text-[#a89070] mb-1">
-              Gender
-            </label>
-            <select
-              value={form.gender}
-              onChange={(e) => set("gender", e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-[#fbebd8] bg-[#fdf6ee] text-[#3d2b0e] focus:outline-none focus:ring-2 focus:ring-[#ff7c2a]/40 transition"
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-          </div>
-        </div>
 
-        {/* Weight + Height row */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-700 uppercase tracking-widest text-[#a89070] mb-1">
-              Weight (kg)
-            </label>
-            <input
-              type="number"
-              value={form.weight}
-              onChange={(e) => set("weight", e.target.value)}
-              placeholder="70"
-              className="w-full px-4 py-3 rounded-xl border border-[#fbebd8] bg-[#fdf6ee] text-[#3d2b0e] placeholder-[#a89070] focus:outline-none focus:ring-2 focus:ring-[#ff7c2a]/40 transition"
+          {/* Weight + Height */}
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="weight"
+              render={({ field: { value, ...rest } }) => (
+                <FormItem>
+                  <FormLabel>Weight (kg)</FormLabel>
+                  <FormControl>
+                    <input
+                      {...rest}
+                      value={value as string ?? ""}
+                      type="number"
+                      placeholder="70"
+                      className={INPUT_CLASS}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.weight && (
-              <p className="text-red-500 text-xs mt-1">{errors.weight}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-700 uppercase tracking-widest text-[#a89070] mb-1">
-              Height (cm)
-            </label>
-            <input
-              type="number"
-              value={form.height}
-              onChange={(e) => set("height", e.target.value)}
-              placeholder="170"
-              className="w-full px-4 py-3 rounded-xl border border-[#fbebd8] bg-[#fdf6ee] text-[#3d2b0e] placeholder-[#a89070] focus:outline-none focus:ring-2 focus:ring-[#ff7c2a]/40 transition"
+            <FormField
+              control={form.control}
+              name="height"
+              render={({ field: { value, ...rest } }) => (
+                <FormItem>
+                  <FormLabel>Height (cm)</FormLabel>
+                  <FormControl>
+                    <input
+                      {...rest}
+                      value={value as string ?? ""}
+                      type="number"
+                      placeholder="170"
+                      className={INPUT_CLASS}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.height && (
-              <p className="text-red-500 text-xs mt-1">{errors.height}</p>
-            )}
           </div>
-        </div>
 
-        {/* Activity Level */}
-        <div>
-          <label className="block text-xs font-700 uppercase tracking-widest text-[#a89070] mb-1">
-            Activity Level
-          </label>
-          <select
-            value={form.activity}
-            onChange={(e) => set("activity", e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-[#fbebd8] bg-[#fdf6ee] text-[#3d2b0e] focus:outline-none focus:ring-2 focus:ring-[#ff7c2a]/40 transition"
+          {/* Activity Level */}
+          <FormField
+            control={form.control}
+            name="activity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Activity Level</FormLabel>
+                <FormControl>
+                  <select {...field} className={INPUT_CLASS}>
+                    {ACTIVITY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Goal */}
+          <FormField
+            control={form.control}
+            name="goal"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Goal</FormLabel>
+                <div className="flex gap-3">
+                  {GOAL_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => field.onChange(opt.value)}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-600 border transition-all duration-300 ${
+                        field.value === opt.value
+                          ? "bg-gradient-to-r from-[#ff7c2a] to-[#ffb347] text-white border-transparent shadow-md"
+                          : "border-[#fbebd8] text-[#a89070] bg-white hover:border-[#ff7c2a]"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <button
+            type="submit"
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-[#ff7c2a] to-[#ffb347] text-white font-800 text-base shadow-md hover:opacity-90 hover:-translate-y-0.5 transition-all duration-300 mt-2"
           >
-            {ACTIVITY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Goal */}
-        <div>
-          <label className="block text-xs font-700 uppercase tracking-widest text-[#a89070] mb-1">
-            Goal
-          </label>
-          <div className="flex gap-3">
-            {GOAL_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => set("goal", opt.value)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-600 border transition-all duration-300 ${
-                  form.goal === opt.value
-                    ? "bg-gradient-to-r from-[#ff7c2a] to-[#ffb347] text-white border-transparent shadow-md"
-                    : "border-[#fbebd8] text-[#a89070] bg-white hover:border-[#ff7c2a]"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full py-4 rounded-xl bg-gradient-to-r from-[#ff7c2a] to-[#ffb347] text-white font-800 text-base shadow-md hover:opacity-90 hover:-translate-y-0.5 transition-all duration-300 mt-2"
-        >
-          Calculate & Start 🥗
-        </button>
-      </form>
+            Calculate & Start 🥗
+          </button>
+        </form>
+      </Form>
 
       {/* Targets modal */}
       {modal && (
@@ -248,12 +258,14 @@ export default function SetupForm() {
                 Your Daily Targets
               </h2>
               <p className="text-sm text-[#a89070] mt-1">
-                To <span className="font-700 text-[#ff7c2a]">{GOAL_LABEL[modal.goal]}</span>,{" "}
-                {modal.name}, you need:
+                To{" "}
+                <span className="font-700 text-[#ff7c2a]">
+                  {GOAL_LABEL[modal.goal]}
+                </span>
+                , {modal.name}, you need:
               </p>
             </div>
 
-            {/* Big calorie number */}
             <div className="text-center bg-gradient-to-br from-[#ff7c2a] to-[#ffb347] rounded-2xl py-5 mb-4">
               <p
                 className="text-5xl font-900 text-white leading-none"
@@ -266,23 +278,19 @@ export default function SetupForm() {
               </p>
             </div>
 
-            {/* Macro grid */}
             <div className="grid grid-cols-3 gap-3 mb-6">
               {[
-                { label: "Protein", value: modal.targets.protein, unit: "g", color: "#ff7c2a" },
-                { label: "Carbs", value: modal.targets.carbs, unit: "g", color: "#ffb347" },
-                { label: "Fat", value: modal.targets.fat, unit: "g", color: "#f59e0b" },
+                { label: "Protein", value: modal.targets.protein, color: "#ff7c2a" },
+                { label: "Carbs", value: modal.targets.carbs, color: "#ffb347" },
+                { label: "Fat", value: modal.targets.fat, color: "#f59e0b" },
               ].map((m) => (
                 <div
                   key={m.label}
                   className="bg-[#fdf6ee] rounded-xl p-3 text-center border border-[#fbebd8]"
                 >
-                  <p
-                    className="text-xl font-900 leading-none"
-                    style={{ color: m.color }}
-                  >
+                  <p className="text-xl font-900 leading-none" style={{ color: m.color }}>
                     {m.value}
-                    <span className="text-sm">{m.unit}</span>
+                    <span className="text-sm">g</span>
                   </p>
                   <p className="text-[11px] uppercase tracking-widest text-[#a89070] mt-1">
                     {m.label}

@@ -89,3 +89,11 @@ export interface NutriData {
   carbs: number;
   fat: number;
 }
+
+export interface PendingEntry {
+  foodName: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}

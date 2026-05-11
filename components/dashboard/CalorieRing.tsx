@@ -1,84 +1,96 @@
 "use client";
 
+import { useSpring, useTransform, motion } from "framer-motion";
+import { useEffect } from "react";
+import AnimatedNumber from "@/components/shared/AnimatedNumber";
+
 interface CalorieRingProps {
   consumed: number;
   target: number;
 }
 
+const RADIUS = 80;
+const STROKE = 12;
+const NORMALIZED_RADIUS = RADIUS - STROKE / 2;
+const CIRCUMFERENCE = 2 * Math.PI * NORMALIZED_RADIUS;
+
 export default function CalorieRing({ consumed, target }: CalorieRingProps) {
   const pct = target > 0 ? consumed / target : 0;
-  const radius = 80;
-  const stroke = 12;
-  const normalizedRadius = radius - stroke / 2;
-  const circumference = 2 * Math.PI * normalizedRadius;
   const clampedPct = Math.min(pct, 1);
-  const offset = circumference - clampedPct * circumference;
 
-  const color =
-    pct > 1 ? "#ef4444" : pct >= 0.75 ? "#f59e0b" : "#22c55e";
+  const springPct = useSpring(clampedPct, { stiffness: 60, damping: 15 });
+  const strokeDashoffset = useTransform(springPct, (v) => CIRCUMFERENCE - v * CIRCUMFERENCE);
+
+  const springProgress = useSpring(pct, { stiffness: 60, damping: 15 });
+  const strokeColor = useTransform(springProgress, (v) => {
+    if (v > 1) return "#ef4444";
+    if (v >= 0.75) return "#f59e0b";
+    return "#22c55e";
+  });
+
+  useEffect(() => {
+    springPct.set(clampedPct);
+    springProgress.set(pct);
+  }, [springPct, springProgress, clampedPct, pct]);
+
+  const remaining = target - consumed;
+  const isOver = remaining < 0;
+  const statusText = isOver
+    ? `${Math.abs(remaining)} kcal over`
+    : `${remaining} kcal remaining`;
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative w-[176px] h-[176px]">
-        <svg width={176} height={176} viewBox="0 0 176 176">
+      <div
+        className="relative w-[176px] h-[176px]"
+        role="img"
+        aria-label={`${consumed} calories consumed of ${target} target`}
+      >
+        <svg width={176} height={176} viewBox="0 0 176 176" aria-hidden="true">
           {/* Track */}
           <circle
             cx={88}
             cy={88}
-            r={normalizedRadius}
+            r={NORMALIZED_RADIUS}
             fill="none"
             stroke="#fbebd8"
-            strokeWidth={stroke}
+            strokeWidth={STROKE}
           />
-          {/* Progress */}
-          <circle
+          {/* Progress arc */}
+          <motion.circle
             cx={88}
             cy={88}
-            r={normalizedRadius}
+            r={NORMALIZED_RADIUS}
             fill="none"
-            stroke={color}
-            strokeWidth={stroke}
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
+            stroke={strokeColor}
+            strokeWidth={STROKE}
+            strokeDasharray={CIRCUMFERENCE}
+            strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
             transform="rotate(-90 88 88)"
-            style={{ transition: "stroke-dashoffset 0.6s cubic-bezier(0.4,0,0.2,1), stroke 0.4s" }}
           />
-          {/* Overflow arc (red) when > 100% */}
-          {pct > 1 && (
-            <circle
-              cx={88}
-              cy={88}
-              r={normalizedRadius}
-              fill="none"
-              stroke="#ef4444"
-              strokeWidth={stroke}
-              strokeDasharray={`${(pct - 1) * circumference} ${circumference}`}
-              strokeDashoffset={0}
-              strokeLinecap="round"
-              transform="rotate(-90 88 88)"
-              style={{ transition: "stroke-dasharray 0.6s cubic-bezier(0.4,0,0.2,1)" }}
-            />
-          )}
         </svg>
+
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span
-            className="text-3xl font-black leading-none tracking-tighter"
-            style={{ color, letterSpacing: "-2px" }}
+          <motion.span
+            className="text-3xl font-black leading-none"
+            style={{ color: strokeColor, letterSpacing: "-2px" }}
           >
-            {consumed}
-          </span>
+            <AnimatedNumber value={consumed} />
+          </motion.span>
           <span className="text-[11px] uppercase tracking-widest text-[#a89070] mt-1">
-            of {target} kcal
+            / {target}
           </span>
         </div>
       </div>
-      <p className="text-xs text-[#a89070] mt-2">
-        {target - consumed > 0
-          ? `${target - consumed} kcal remaining`
-          : `${consumed - target} kcal over goal`}
-      </p>
+
+      <motion.p
+        className="text-xs mt-2"
+        style={{ color: strokeColor }}
+      >
+        {statusText}
+      </motion.p>
     </div>
   );
 }
