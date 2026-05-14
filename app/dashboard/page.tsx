@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { useNutriStore } from "@/lib/store";
 import { useBadgeEvaluator } from "@/hooks/useBadgeEvaluator";
 import { useDailyReset } from "@/hooks/useDailyReset";
@@ -38,8 +39,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fdf6ee]">
-      <header className="flex items-center justify-between px-4 md:px-8 py-4 border-b border-[#fbebd8] bg-white/80 backdrop-blur sticky top-0 z-10">
+    <div className="bg-[#fdf6ee] flex flex-col md:h-screen md:overflow-hidden">
+      <header className="shrink-0 flex items-center justify-between px-4 md:px-8 py-4 border-b border-[#fbebd8] bg-white/80 backdrop-blur z-10">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🥗</span>
           <span className="font-900 text-[#3d2b0e] text-lg tracking-tight">NutriSathi</span>
@@ -49,9 +50,15 @@ export default function DashboardPage() {
           <button onClick={handleReset} className="text-xs text-[#a89070] hover:text-[#ff7c2a] transition px-3 py-1.5 rounded-xl border border-[#fbebd8] hover:border-[#ff7c2a]">
             Reset
           </button>
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="text-xs text-[#a89070] hover:text-[#ff7c2a] transition px-3 py-1.5 rounded-xl border border-[#fbebd8] hover:border-[#ff7c2a]"
+          >
+            Sign out
+          </button>
         </div>
       </header>
-      <div className="flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-8 max-w-6xl mx-auto">
+      <div className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full md:overflow-hidden">
         <SummaryPanel />
         <ActionPanel state={state} />
       </div>

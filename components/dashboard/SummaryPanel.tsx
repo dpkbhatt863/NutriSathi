@@ -14,7 +14,7 @@ export default function SummaryPanel() {
   if (!profile) return null;
 
   return (
-    <div className="w-full md:w-80 lg:w-96 shrink-0 space-y-4">
+    <div className="w-full md:w-80 lg:w-96 shrink-0 space-y-4 md:overflow-y-auto md:pb-2" style={{ scrollbarWidth: "none" }}>
       <div className="bg-white border border-[#fbebd8] rounded-[20px] shadow-[0_2px_16px_rgba(180,130,60,0.10)] p-6 flex flex-col items-center gap-4">
         <CalorieRing consumed={dailyTotals.calories} target={profile.targets.calories} />
         <StreakBadge streak={streak} />

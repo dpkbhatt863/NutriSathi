@@ -44,7 +44,7 @@ export default function ChatWindow({
 
   if (messages.length === 0 && !pendingEntry) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 gap-4">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center px-4 py-8 gap-4">
         <div className="text-5xl">🍱</div>
         <p className="text-[#a89070] text-sm text-center max-w-xs">
           Kya khaaya aaj? Hinglish mein bataiye — NutriSathi samajh lega!
@@ -65,7 +65,7 @@ export default function ChatWindow({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto py-4 space-y-3">
+    <div className="flex-1 overflow-y-auto min-h-0 py-4 space-y-3">
       {/* Chat bubbles */}
       <div className="px-4 space-y-3">
         {messages.map((msg, i) => (

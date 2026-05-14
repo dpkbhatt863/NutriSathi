@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSession } from "next-auth/react";
 import { useNutriStore } from "@/lib/store";
 import { calculateTDEE } from "@/lib/nutrition";
 import { profileSchema, type ProfileFormValues, type ProfileFormInput } from "@/lib/schemas/profile";
@@ -48,13 +49,14 @@ interface ResultModal {
 
 export default function SetupForm() {
   const router = useRouter();
+  const { data: session } = useSession();
   const setProfile = useNutriStore((s) => s.setProfile);
   const [modal, setModal] = useState<ResultModal | null>(null);
 
   const form = useForm<ProfileFormInput, unknown, ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: "",
+      name: session?.user?.name ?? "",
       age: undefined,
       gender: "male",
       weight: undefined,
@@ -74,7 +76,7 @@ export default function SetupForm() {
       values.goal,
     );
 
-    setProfile({ ...values, targets });
+    setProfile({ ...values, targets, userId: session?.user?.email ?? "" });
     setModal({ name: values.name, goal: values.goal, targets });
   };
 

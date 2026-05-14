@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
+import { auth } from "@/auth";
 import Providers from "@/components/layout/Providers";
 import BottomNav from "@/components/layout/BottomNav";
 import "./globals.css";
@@ -15,15 +16,17 @@ export const metadata: Metadata = {
   description: "Track your Indian meals with AI-powered nutrition insights",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en" className={`${nunito.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full bg-[#fdf6ee] text-[#3d2b0e] antialiased pb-14 md:pb-0">
-        <Providers>
+        <Providers session={session}>
           {children}
           <BottomNav />
         </Providers>

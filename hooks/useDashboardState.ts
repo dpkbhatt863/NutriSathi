@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNutriStore } from "@/lib/store";
 import type { PendingEntry } from "@/lib/types";
 
-export type RightTab = "search" | "ai";
+export type RightTab = "search" | "ai" | "meal";
 
 export interface DashboardState {
   tab: RightTab;
@@ -39,6 +39,7 @@ export function useDashboardState(): DashboardState {
     if (!isBuildingMeal) startMealBuilder();
     addToMeal(pendingEntry);
     setPendingEntry(null);
+    setTab("meal");
   };
 
   return {

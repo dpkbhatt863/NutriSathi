@@ -1,4 +1,5 @@
 export interface UserProfile {
+  userId: string; // Google account email — used to scope profile to the logged-in user
   name: string;
   age: number;
   gender: "male" | "female";

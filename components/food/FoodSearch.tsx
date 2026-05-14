@@ -30,6 +30,7 @@ export default function FoodSearch({ onPendingEntry }: FoodSearchProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const skipNextSearch = useRef(false);
 
   const search = useCallback(async (q: string) => {
     if (q.length < 2) { setResults([]); setShowDropdown(false); return; }
@@ -51,6 +52,7 @@ export default function FoodSearch({ onPendingEntry }: FoodSearchProps) {
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    if (skipNextSearch.current) { skipNextSearch.current = false; return; }
     timerRef.current = setTimeout(() => search(query), 500);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [query, search]);
@@ -67,9 +69,11 @@ export default function FoodSearch({ onPendingEntry }: FoodSearchProps) {
   }, []);
 
   const handleSelect = (item: FoodDatabaseItem) => {
+    skipNextSearch.current = true;
     setSelected(item);
     setGrams("100");
     setShowDropdown(false);
+    setResults([]);
     setQuery(item.name);
   };
 
@@ -98,7 +102,7 @@ export default function FoodSearch({ onPendingEntry }: FoodSearchProps) {
             type="text"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setSelected(null); }}
-            onFocus={() => results.length > 0 && setShowDropdown(true)}
+            onFocus={() => !selected && results.length > 0 && setShowDropdown(true)}
             placeholder="Search food — e.g. Quaker oats, Amul milk…"
             className="w-full px-4 py-3 pr-10 rounded-xl border border-[#fbebd8] bg-[#fdf6ee] text-[#3d2b0e] placeholder-[#a89070] text-sm focus:outline-none focus:ring-2 focus:ring-[#ff7c2a]/40 transition"
           />
